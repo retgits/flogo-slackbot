@@ -1,0 +1,3 @@
+{
+    "body": "token=SlackToken&team_id=TEAMID&team_domain=TEAMNAME&channel_id=CHANNELID&channel_name=general&user_id=USERID&user_name=sam&command=%2Fcat&text=whoami&response_url=URL&trigger_id=TRIGGERID"
+}

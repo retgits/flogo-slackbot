@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SlackCat - Because cats and birds can be friends!
+Resources:
+    SlackCat:
+        Type: AWS::Serverless::Function 
+        Properties:
+            CodeUri: ./
+            Handler: handler
+            Runtime: go1.x

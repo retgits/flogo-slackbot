@@ -1,0 +1,211 @@
+{
+  "name": "SlackCat",
+  "type": "flogo:app",
+  "version": "0.0.1",
+  "appModel": "1.0.0",
+  "description": "Because cats and birds can be friends!",
+  "triggers": [
+    {
+      "id": "lambda_trigger",
+      "ref": "github.com/TIBCOSoftware/flogo-contrib/trigger/lambda",
+      "name": "Lambda Trigger",
+      "description": "AWS Lambda Trigger used to start a flow as a function.",
+      "settings": {},
+      "handlers": [
+        {
+          "action": {
+            "ref": "github.com/TIBCOSoftware/flogo-contrib/action/flow",
+            "data": {
+              "flowURI": "res://flow:slash_command"
+            },
+            "mappings": {
+              "input": [
+                {
+                  "mapTo": "content",
+                  "type": "assign",
+                  "value": "$.evt"
+                }
+              ],
+              "output": [
+                {
+                  "mapTo": "data",
+                  "type": "assign",
+                  "value": "$.response"
+                },
+                {
+                  "mapTo": "status",
+                  "type": "literal",
+                  "value": 200
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "id": "flow:slash_command",
+      "data": {
+        "name": "SlashCommand",
+        "description": "This flow will react to the Slash command",
+        "metadata": {
+          "input": [
+            {
+              "name": "content",
+              "type": "any"
+            }
+          ],
+          "output": [
+            {
+              "name": "response",
+              "type": "string"
+            }
+          ]
+        },
+        "tasks": [
+          {
+            "id": "queryparser_9",
+            "name": "Query Parser",
+            "description": "Parses a query string into name/value pairs.",
+            "activity": {
+              "ref": "github.com/retgits/flogo-components/activity/queryparser",
+              "input": {
+                "query": null
+              },
+              "mappings": {
+                "input": [
+                  {
+                    "type": "assign",
+                    "value": "$flow.content.body",
+                    "mapTo": "query"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "log_10",
+            "name": "Log",
+            "description": "Simple Log Activity",
+            "activity": {
+              "ref": "github.com/TIBCOSoftware/flogo-contrib/activity/log",
+              "input": {
+                "message": "",
+                "flowInfo": "false",
+                "addToFlow": "false"
+              },
+              "mappings": {
+                "input": [
+                  {
+                    "type": "assign",
+                    "value": "$activity[queryparser_9].result",
+                    "mapTo": "addToFlow"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "actreturn_11",
+            "name": "Usage",
+            "description": "Simple Return Activity",
+            "activity": {
+              "ref": "github.com/TIBCOSoftware/flogo-contrib/activity/actreturn",
+              "input": {
+                "mappings": [
+                  {
+                    "mapTo": "response",
+                    "type": "literal",
+                    "value": "Type /cat fact to get a random fact in this channel!"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "rest_14",
+            "name": "Get Fact",
+            "description": "Simple REST Activity",
+            "activity": {
+              "ref": "github.com/TIBCOSoftware/flogo-contrib/activity/rest",
+              "input": {
+                "method": "GET",
+                "uri": "https://cat-fact.herokuapp.com/facts/random",
+                "proxy": "",
+                "pathParams": null,
+                "queryParams": null,
+                "header": null,
+                "skipSsl": "false",
+                "content": null
+              }
+            }
+          },
+          {
+            "id": "actreturn_15",
+            "name": "Fact",
+            "description": "Simple Return Activity",
+            "activity": {
+              "ref": "github.com/TIBCOSoftware/flogo-contrib/activity/actreturn",
+              "input": {
+                "mappings": [
+                  {
+                    "mapTo": "response",
+                    "type": "expression",
+                    "value": "string.concat(\":wave: <@\", $activity[queryparser_9].result.user_name,\">, did you know that \",$activity[rest_14].result.text)"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "id": "actreturn_13",
+            "name": "WhoAmI",
+            "description": "Simple Return Activity",
+            "activity": {
+              "ref": "github.com/TIBCOSoftware/flogo-contrib/activity/actreturn",
+              "input": {
+                "mappings": [
+                  {
+                    "mapTo": "response",
+                    "type": "expression",
+                    "value": "string.concat(\"It is kinda weird to ask your own name, but okay... you are <@\", $activity[queryparser_9].result.user_name,\">\")"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "links": [
+          {
+            "from": "queryparser_9",
+            "to": "log_10"
+          },
+          {
+            "from": "queryparser_9",
+            "to": "actreturn_11",
+            "type": "expression",
+            "value": "$activity[queryparser_9].result.text == \"usage\""
+          },
+          {
+            "from": "queryparser_9",
+            "to": "rest_14",
+            "type": "expression",
+            "value": "$activity[queryparser_9].result.text == \"fact\""
+          },
+          {
+            "from": "rest_14",
+            "to": "actreturn_15"
+          },
+          {
+            "from": "queryparser_9",
+            "to": "actreturn_13",
+            "type": "expression",
+            "value": "$activity[queryparser_9].result.text == \"whoami\""
+          }
+        ]
+      }
+    }
+  ]
+}
